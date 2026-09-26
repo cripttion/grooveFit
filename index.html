@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Groove Fit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💃</text></svg>" />
+</head>
+<body>
+  <div id="app">
+    <!-- ───────── HUD ───────── -->
+    <header id="hud">
+      <div class="logo">GROOVE<span>FIT</span></div>
+      <div class="hud-stats">
+        <div class="stat"><label>Score</label><b id="hud-score">0</b></div>
+        <div class="stat"><label>Combo</label><b id="hud-combo">0</b><i id="hud-mult">x1</i></div>
+        <div class="stat"><label>kcal</label><b id="hud-kcal">0.0</b></div>
+        <div class="stat"><label>Time</label><b id="hud-time">0:00</b></div>
+      </div>
+      <div class="hud-actions">
+        <button id="btn-pause" class="icon-btn" title="Pause (Space)">❚❚</button>
+        <button id="btn-quit" class="icon-btn" title="Quit (Esc)">✕</button>
+      </div>
+    </header>
+
+    <main id="play">
+      <!-- Big screen: the dance video with its tracked skeleton + game feedback -->
+      <section id="video-main" class="panel ref-panel">
+        <div class="panel-tag plan-tag"><span id="plan-tag">DANCE ALONG</span><span id="plan-dots"></span></div>
+        <div id="plan-card"></div>
+        <div id="yt-wrap"><div id="yt-player"></div></div>
+        <video id="ref-video" playsinline></video>
+        <canvas id="ref-overlay"></canvas>
+        <label class="ref-toggle"><input id="show-track" type="checkbox" checked /> show tracking</label>
+        <div id="ref-note"></div>
+
+        <div id="move-name"></div>
+        <div id="judgement"></div>
+        <div id="fever-banner">FEVER x2</div>
+        <div id="stage-msg"></div>
+        <div id="countdown"></div>
+      </section>
+
+      <!-- Side column: silhouettes (target vs. you) + your camera -->
+      <section id="left">
+        <section id="stage">
+          <div class="panel-tag">MATCH THE POSE</div>
+          <canvas id="stage-bg"></canvas>
+          <canvas id="stage-fx"></canvas>
+          <div id="match-meter"><div class="fill"></div><span>MATCH</span></div>
+          <div id="groove-meter"><div class="fill"></div><span>FEVER</span></div>
+        </section>
+        <div class="panel cam-panel">
+          <div class="panel-tag">YOU <span id="track-dot"></span></div>
+          <video id="cam" playsinline muted></video>
+          <canvas id="cam-overlay"></canvas>
+          <div id="cam-msg"></div>
+        </div>
+      </section>
+
+      <!-- Upcoming moves -->
+      <section id="lane-wrap">
+        <canvas id="lane"></canvas>
+      </section>
+    </main>
+
+    <!-- ───────── MENU ───────── -->
+    <div id="menu" class="overlay show">
+      <div class="menu-card">
+        <div class="title">GROOVE<span>FIT</span></div>
+        <p class="tagline">Dance with the video. Fill the silhouette. Burn calories.</p>
+
+        <div class="modes">
+          <button class="mode active" data-mode="demo">
+            <div class="mode-ico">⚡</div>
+            <div>
+              <h3>Quick Groove</h3>
+              <p>Built-in beat-synced moves, with the YouTube workout playing alongside.</p>
+            </div>
+          </button>
+          <button class="mode" data-mode="video">
+            <div class="mode-ico">🎬</div>
+            <div>
+              <h3>Learn From Video</h3>
+              <p>Drop the dance video file. AI extracts every pose into silhouettes you must match.</p>
+            </div>
+          </button>
+        </div>
+
+        <div class="mode-body" data-for="demo">
+          <label class="field">YouTube video
+            <input id="yt-url" type="text" value="https://www.youtube.com/watch?v=v3SGmJPDNVw" />
+          </label>
+          <div class="row">
+            <label class="field">Start video at (sec)<input id="yt-start" type="number" min="0" value="0" /></label>
+            <label class="field">Music
+              <select id="music">
+                <option value="yt">YouTube audio</option>
+                <option value="beat">Built-in beat (128 BPM)</option>
+              </select>
+            </label>
+          </div>
+          <p class="hint" id="auto-choreo-hint"></p>
+        </div>
+
+        <div class="mode-body hidden" data-for="video">
+          <label id="drop" class="drop">
+            <input id="file" type="file" accept="video/*" hidden />
+            <div class="drop-ico">⬆</div>
+            <div><b>Drop a dance video</b> or click to choose (mp4 / webm / mov)</div>
+            <div class="hint">Everything runs locally in your browser. Nothing is uploaded.</div>
+          </label>
+          <div class="row">
+            <label class="field">Analyze from (sec)<input id="an-start" type="number" min="0" value="0" /></label>
+            <label class="field">Samples / sec
+              <select id="an-fps"><option>6</option><option selected>8</option><option>12</option></select>
+            </label>
+            <label class="field">Analyze
+              <select id="an-len">
+                <option value="60">First 1 min</option>
+                <option value="180">First 3 min</option>
+                <option value="300" selected>First 5 min</option>
+                <option value="0">Whole video</option>
+              </select>
+            </label>
+          </div>
+          <label class="check"><input id="use-yt" type="checkbox" /> Play it through the YouTube player instead (same video, synced by time)</label>
+          <div id="saved-choreo" class="saved hidden"></div>
+          <div class="row small-actions">
+            <label class="link-btn">Import choreography JSON<input id="import" type="file" accept="application/json" hidden /></label>
+          </div>
+        </div>
+
+        <div class="plan-box">
+          <div class="row">
+            <label class="field">Session
+              <select id="plan-mode">
+                <option value="plan" selected>Training plan — learn steps → mix → whole video</option>
+                <option value="full">Just dance the video</option>
+              </select>
+            </label>
+            <label class="field">Steps to learn
+              <select id="plan-steps"><option>3</option><option selected>4</option><option>6</option></select>
+            </label>
+            <label class="field">Final round
+              <select id="plan-final">
+                <option value="0" selected>Whole video</option>
+                <option value="60">First 1 min</option>
+                <option value="180">First 3 min</option>
+              </select>
+            </label>
+          </div>
+          <ol id="plan-preview" class="plan-preview"></ol>
+        </div>
+
+        <div class="row settings">
+          <label class="field">Difficulty
+            <select id="difficulty">
+              <option value="easy">Easy</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard</option>
+            </select>
+          </label>
+          <label class="field">Weight (kg)<input id="weight" type="number" min="30" max="200" value="65" /></label>
+        </div>
+
+        <button id="btn-start" class="cta">LET'S DANCE</button>
+        <button id="btn-bot" class="link-btn">No camera? Watch the auto-dancer demo</button>
+        <p id="menu-error" class="error"></p>
+        <p class="best" id="best"></p>
+      </div>
+    </div>
+
+    <!-- ───────── ANALYZING ───────── -->
+    <div id="analyzing" class="overlay">
+      <div class="menu-card narrow">
+        <h2>Learning the choreography…</h2>
+        <canvas id="an-preview"></canvas>
+        <div class="progress"><div class="bar"></div></div>
+        <p id="an-status" class="hint"></p>
+        <button id="an-cancel" class="link-btn">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ───────── LOADING ───────── -->
+    <div id="loading" class="overlay">
+      <div class="spinner"></div>
+      <p id="loading-text">Warming up…</p>
+    </div>
+
+    <!-- ───────── PAUSE ───────── -->
+    <div id="paused" class="overlay">
+      <div class="menu-card narrow center">
+        <h2>Paused</h2>
+        <button id="btn-resume" class="cta">RESUME</button>
+        <button id="btn-quit2" class="link-btn">Quit to menu</button>
+      </div>
+    </div>
+
+    <!-- ───────── RESULTS ───────── -->
+    <div id="results" class="overlay">
+      <div class="menu-card narrow center">
+        <div class="grade" id="res-grade">A</div>
+        <div class="stars" id="res-stars"></div>
+        <div class="res-score" id="res-score">0</div>
+        <div class="res-grid">
+          <div><b id="res-perfect">0</b><span>Perfect</span></div>
+          <div><b id="res-good">0</b><span>Good</span></div>
+          <div><b id="res-ok">0</b><span>OK</span></div>
+          <div><b id="res-miss">0</b><span>Miss</span></div>
+        </div>
+        <div class="res-grid three">
+          <div><b id="res-combo">0</b><span>Max combo</span></div>
+          <div><b id="res-acc">0%</b><span>Accuracy</span></div>
+          <div><b id="res-kcal">0</b><span>kcal burned</span></div>
+        </div>
+        <ol id="res-plan" class="res-plan"></ol>
+        <p id="res-best" class="best"></p>
+        <button id="btn-again" class="cta">DANCE AGAIN</button>
+        <button id="btn-menu" class="link-btn">Back to menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

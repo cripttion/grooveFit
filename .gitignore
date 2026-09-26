@@ -1,0 +1,5 @@
+# Local video copies used only for pose analysis (the site streams from YouTube)
+media/
+.claude/
+.DS_Store
+node_modules/
